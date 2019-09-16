@@ -1,3 +1,4 @@
+```r
 ##################
 # Ridge estimator
 ##################
@@ -28,3 +29,4 @@ RidgeEstimator <- function(y, X, r)
   diag(D.pseudo.Inverse) <- SVD$d / (SVD$d ^ 2 + r)
   return(as.vector(V %*% D.pseudo.Inverse %*% t(U) %*% y))
 }
+```
