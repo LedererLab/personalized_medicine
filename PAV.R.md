@@ -1,3 +1,4 @@
+```r
 ##########
 ## PavEdr
 ##########
@@ -180,3 +181,4 @@ PavEdr <- function(y, X, Z, tuning.parameters = NULL, num.tuning = 300)
   return(list(beta.hat = estimator.hat, y.hat = outcome.hat, 
               tuning.chosen = tuning.hat, time = pav.time))
 }
+```
