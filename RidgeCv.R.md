@@ -1,3 +1,4 @@
+```r
 ###########
 ## RidgeCv 
 ###########
@@ -91,4 +92,4 @@ RidgeCv <- function(y, X, K, tuning.parameters = NULL, num.tuning = 300)
   
   return(tuning.parameter = tuning.parameters[which.min(prediction.error.sum)])
 }
-
+```
