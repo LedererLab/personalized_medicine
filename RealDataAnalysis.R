@@ -1,3 +1,4 @@
+```r
 #######################################
 ######## Kidney data analysis ######### 
 #######################################
@@ -191,7 +192,7 @@ colnames(output.Data)<- c("mean", "sd", "Scaled-compTime")
 cat("Simulation Results : \n")
 
 output.Data
-
+```
 
 
 
