@@ -9,7 +9,7 @@ The file `PAV.md` contains a function `PAVedr` to select a tuning parameter with
 
 # Simulations
 
-We provide an example code in `SimulationStudy.md` for a comparison of averaged individual prediction errors with 10-fold cross-validation. This program requires `R 3.6.1` or earlier.
+We provide an example code in `SimulationStudy.md` for a comparison of averaged individual prediction errors with 10-fold cross-validation. Developed for `R 3.6.1`.
 
 # Real Data Analyses
 
