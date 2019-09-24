@@ -1,4 +1,4 @@
-# personalized Medicine
+# Euclidean Distance Ridge Estimator
 
 This repository provides the data and implementations of the methods described in [Tuning parameter calibration for prediction in personalized medicine](To Do).
 
@@ -21,13 +21,13 @@ The processed data is in `personalized_medicine/data/E-GEOD-33070_clinical.RData
 
 # Repository Authors 
 
-* Shih-Ting Huang-Ph.D. student in Mathematical Statistics, Ruhr University Bochum
+* Shih-Ting Huang, Ph.D. student in Mathematical Statistics, Ruhr-University Bochum
 
-* Yannick Düren-Ph.D. student in Mathematical Statistics, Ruhr University Bochum
+* Yannick Düren, Ph.D. student in Mathematical Statistics, Ruhr-University Bochum
 
-* Kristoffer Herland Hellton-Norwegian Computing Center
+* Kristoffer Herland Hellton, Researcher, Norwegian Computing Center
 
-* Johannes Laderer-Professor in Mathematical Statistics, Ruhr-University Bochum
+* Johannes Lederer, Professor in Mathematical Statistics, Ruhr-University Bochum
 
 # Other files
 
