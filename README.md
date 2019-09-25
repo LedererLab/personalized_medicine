@@ -1,6 +1,6 @@
 # Euclidean Distance Ridge Estimator
 
-This repository provides the data and implementations of the methods described in [Tuning parameter calibration for prediction in personalized medicine](To Do).
+This repository provides the data and implementations of the methods described in [Tuning parameter calibration for prediction in personalized medicine](https://arxiv.org/abs/1909.10635).
 
 # Usage 
 
@@ -50,5 +50,5 @@ The HDIM package is licensed under the MIT license. To
 view the MIT license please consult `LICENSE.txt`.
 
 ## References
-[Tuning parameter calibration for prediction in personalized medicine](To Do)
+[Tuning parameter calibration for prediction in personalized medicine](https://arxiv.org/abs/1909.10635)
 
