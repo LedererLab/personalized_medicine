@@ -22,8 +22,8 @@ RidgeCv <- function(y, X, K, tuning.parameters = NULL, num.tuning = 300)
   #   num.tuning : The number of tuning parameters if tuning.parameters = NULL. 
   #                The default value is set to be 300.
   # Returns : 
-  #   beta.hat : A numerical within tuning.parameters that has the minmum 
-  #              prediction error computed by K-fold cross-vaòidation.
+  #   A numerical value within tuning.parameters that has the minmum prediction 
+  #   error computed by K-fold cross-vaòidation.
   
   # Default tuning parameters
   if (is.null(tuning.parameters)) {
