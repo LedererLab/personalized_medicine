@@ -1,10 +1,24 @@
 ```r
-##################
-# Ridge estimator
-##################
+####################
+# Ridge estimator ##
+####################
 
 RidgeEstimator <- function(y, X, r)
 {
+  # Description :
+  #               The Computation of ridge estimator based on a given tuning
+  #               parameter.
+  # Usage : 
+  #         RidgeEstimato(y, X, r)
+  # Arguments : 
+  #   y : A vector of observations of length n.
+  #   X : A design matrix of dimension n * p.
+  #   r : A numerical value representing the tuning parameter for ridge.
+  # Returns : 
+  #   A vector of dimension p.
+  
+  ##### Compute the ridge solution by SVD
+  
   if (dim(X)[1] < dim(X)[2]){
     SVD <- svd(X)
     U <- SVD$u

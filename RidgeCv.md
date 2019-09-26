@@ -1,14 +1,33 @@
 ```r
-###########
-## RidgeCv 
-###########
+#############
+## RidgeCv ##
+#############
 
 # Cross validation for Ridge
 RidgeCv <- function(y, X, K, tuning.parameters = NULL, num.tuning = 300)
 {
+  # Description :
+  #               Ridge tuning parameter calibration based on K-fold 
+  #               cross-validation.
+  # Usage : 
+  #         RidgeCv(y, X, K, tuning.parameters = NULL, num.tuning = 300)
+  # Arguments : 
+  #   y : A vector of observations of length n.
+  #   X : A design matrix of dimension n * p.
+  #   K : A positive integer representing the number of fold to apply 
+  #       cross-validation.
+  #   tuning.parameters : A vector containing a grid of tuning parameters. The 
+  #                       default is set to be NULL. If it is NULL, then a 
+  #                       sequence of vector will be generated automatially.
+  #   num.tuning : The number of tuning parameters if tuning.parameters = NULL. 
+  #                The default value is set to be 300.
+  # Returns : 
+  #   beta.hat : A numerical within tuning.parameters that has the minmum 
+  #              prediction error computed by K-fold cross-vaòidation.
+  
   # Default tuning parameters
   if (is.null(tuning.parameters)) {
-    power <- seq(from = -15, to = 150, length.out = num.tuning)
+    power <- seq(from = -3, to = 3, length.out = num.tuning)
     tuning.parameters <- 10^power
   } else {  
     #If tuning.parameters are given
@@ -60,16 +79,19 @@ RidgeCv <- function(y, X, K, tuning.parameters = NULL, num.tuning = 300)
     ridge.estimators <- matrix(nrow = p.var, ncol = num.tuning)
     
     if (dim(train.X)[1] < dim(train.X)[2]){
-      D.pseudo.Inverse <- matrix(rep(0, dim(train.X)[1] * dim(train.X)[1]), nrow = dim(train.X)[1], ncol = dim(train.X)[1])
+      D.pseudo.Inverse <- matrix(rep(0, dim(train.X)[1] * dim(train.X)[1]), 
+      nrow = dim(train.X)[1], ncol = dim(train.X)[1])
     } else {
-      D.pseudo.Inverse <- matrix(rep(0, dim(train.X)[1] * dim(train.X)[2]), nrow = dim(train.X)[2], ncol = dim(train.X)[1])
+      D.pseudo.Inverse <- matrix(rep(0, dim(train.X)[1] * dim(train.X)[2]), 
+      nrow = dim(train.X)[2], ncol = dim(train.X)[1])
     }
     
     
     for (tune in 1:num.tuning)
     {
       diag(D.pseudo.Inverse) <- SVD$d / (SVD$d ^ 2 + tuning.parameters[tune])
-      ridge.estimators[, tune] <- as.vector(V %*% D.pseudo.Inverse %*% t(U) %*% train.y)
+      ridge.estimators[, tune] <- as.vector(V %*% D.pseudo.Inverse %*% t(U) %*% 
+      train.y)
       # D.update <- D / (D ^ 2 + tuning.parameters[tune])
       # ridge.estimators <- cbind(ridge.estimators, 
       #as.vector(V %*% D.update %*% t(U) %*% train.y))

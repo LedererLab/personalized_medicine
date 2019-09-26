@@ -1,7 +1,7 @@
 ```r
-##########
-## PavEdr
-##########
+############
+## PavEdr ##
+############
 
 PavEdr <- function(y, X, Z, tuning.parameters = NULL, num.tuning = 300)
 {
@@ -29,7 +29,7 @@ PavEdr <- function(y, X, Z, tuning.parameters = NULL, num.tuning = 300)
   #                   tuning parameter chosen by personalized adaptive 
   #                   validation for Euclidean distance Ridge corresponding to 
   #                   the column of Z.
-  
+  #   time : The computation time in seconds.
   
   
   
@@ -47,7 +47,7 @@ PavEdr <- function(y, X, Z, tuning.parameters = NULL, num.tuning = 300)
   
   # Default tuning parameters
   if (is.null(tuning.parameters)) {
-    power <- seq(from = -12, to = 10, length.out = num.tuning)
+    power <- seq(from = -3, to = 3, length.out = num.tuning)
     tuning.parameters <- 10.0^power
   } else {  
     # If tuning.parameters are given set the 
@@ -78,9 +78,11 @@ PavEdr <- function(y, X, Z, tuning.parameters = NULL, num.tuning = 300)
   estimators <- matrix(nrow = num.par, ncol = num.tuning)
   
   if (num.obs < num.par){
-    D.pseudo.Inverse <- matrix(rep(0, num.obs * num.obs), nrow = num.obs, ncol = num.obs)
+    D.pseudo.Inverse <- matrix(rep(0, num.obs * num.obs), nrow = num.obs, 
+    ncol = num.obs)
   } else {
-    D.pseudo.Inverse <- matrix(rep(0, num.obs * num.par), nrow = num.par, ncol = num.obs)
+    D.pseudo.Inverse <- matrix(rep(0, num.obs * num.par), nrow = num.par, 
+    ncol = num.obs)
   }
   
   for(i in 1:num.tuning) {
@@ -114,15 +116,15 @@ PavEdr <- function(y, X, Z, tuning.parameters = NULL, num.tuning = 300)
     z <- Z[, k]  # data vector
     z.norm <- EuclideanNorm(z)
     
-    # coef <- t(V) %*% z  
-    # z <- as.vector(as.matrix(V[, 1:min(num.obs, num.par)]) %*% as.vector(coef[1:min(num.obs, num.par)]))
+    as.vector(coef[1:min(num.obs, num.par)]))
     
     start.time <- Sys.time()
     # compute the bounds (1+c[z,r])r/2
     bounds <- rep(0, num.tuning)
     c.bounds <- rep(0, num.tuning)
     for (i in 1:num.tuning) {
-      c <- as.numeric(abs(z %*% estimators[, i]) / (z.norm * EuclideanNorm(estimators[, i])))
+      c <- as.numeric(abs(z %*% estimators[, i]) / 
+      (z.norm * EuclideanNorm(estimators[, i])))
       bounds[i] <- c * tuning.edr[i]
     }
     

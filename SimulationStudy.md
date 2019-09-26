@@ -1,7 +1,7 @@
 ```r
-#########################################
-########### Simulation Study ############
-#########################################
+######################
+## Simulation Study ##
+######################
 
 ##### Settings
 
@@ -27,7 +27,8 @@ tuning.parameters <- 10 ^ power
 # Choose a test case for the testing data:
 # Options: random, real
 # random - draw testing vectors by random
-# real - Kidney data with 1936 parameters that have p value < 0.05 and random testing vectors
+# real - Kidney data with 1936 parameters that have p value < 0.05 and random 
+# testing vectors
 test.case <- "real"
 
 if (test.case == "real"){
@@ -191,7 +192,8 @@ for (run in 1:num.runs) {
   CV10.tuning <- RidgeCv(y, X, tuning.parameters = tuning.parameters, K = 10)
   CV10.estimator <- RidgeEstimator(y, X, CV10.tuning)
   end.time <- Sys.time()
-  compTime.CV10[run] <- as.numeric(difftime(end.time, start.time, units = "sec"))  # time in ms
+  compTime.CV10[run] <- as.numeric(difftime(end.time, start.time, 
+  units = "sec"))  # time in ms
   cat("done\n")
   
   # CV k=5
@@ -200,7 +202,8 @@ for (run in 1:num.runs) {
   CV5.tuning <- RidgeCv(y, X, tuning.parameters = tuning.parameters, K = 5)
   CV5.estimator <- RidgeEstimator(y, X, CV5.tuning)
   end.time <- Sys.time()
-  compTime.CV5[run] <- as.numeric(difftime(end.time, start.time, units = "sec"))  # time in ms
+  compTime.CV5[run] <- as.numeric(difftime(end.time, start.time, 
+  units = "sec"))  # time in ms
   cat("done\n")
   
   # CV k=3
@@ -209,7 +212,8 @@ for (run in 1:num.runs) {
   CV3.tuning <- RidgeCv(y, X, tuning.parameters = tuning.parameters, K = 3)
   CV3.estimator <- RidgeEstimator(y, X, CV3.tuning)
   end.time <- Sys.time()
-  compTime.CV3[run] <- as.numeric(difftime(end.time, start.time, units = "sec"))  # time in ms
+  compTime.CV3[run] <- as.numeric(difftime(end.time, start.time, 
+  units = "sec"))  # time in ms
   cat("done\n")
   
   
@@ -255,7 +259,8 @@ compTime.CV3.scaled <- mean(compTime.CV3) / compTime.pav.mean
 output.Data <- matrix(c(
   mean(errors.pav), mean(errors.CV10), mean(errors.CV5), mean(errors.CV3),
   sd(errors.pav), sd(errors.CV10), sd(errors.CV5), sd(errors.CV3),
-  compTime.pav.scaled, compTime.CV10.scaled, compTime.CV5.scaled, compTime.CV3.scaled),
+  compTime.pav.scaled, compTime.CV10.scaled, compTime.CV5.scaled, 
+  compTime.CV3.scaled),
   nrow = 4, ncol = 3)
 rownames(output.Data) <- c("Pav.edr", "10-fold CV", "5-fold CV", "3-fold CV")
 colnames(output.Data)<- c("mean", "sd", "Scaled-compTime")
