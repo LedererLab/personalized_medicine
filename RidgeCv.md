@@ -59,7 +59,7 @@ RidgeCv <- function(y, X, K, tuning.parameters = NULL, num.tuning = 300)
     test.X <- as.matrix(X[test.index, ])
     test.y <- as.vector(y[test.index])
     
-    if( n.obs < p.var) {
+    if( n.obs <= p.var) {
       SVD <- svd(train.X)
       U <- SVD$u
       V <- SVD$v
@@ -78,7 +78,7 @@ RidgeCv <- function(y, X, K, tuning.parameters = NULL, num.tuning = 300)
     
     ridge.estimators <- matrix(nrow = p.var, ncol = num.tuning)
     
-    if (dim(train.X)[1] < dim(train.X)[2]){
+    if (dim(train.X)[1] <= dim(train.X)[2]){
       D.pseudo.Inverse <- matrix(rep(0, dim(train.X)[1] * dim(train.X)[1]), 
       nrow = dim(train.X)[1], ncol = dim(train.X)[1])
     } else {

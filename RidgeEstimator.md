@@ -19,7 +19,7 @@ RidgeEstimator <- function(y, X, r)
   
   ##### Compute the ridge solution by SVD
   
-  if (dim(X)[1] < dim(X)[2]){
+  if (dim(X)[1] <= dim(X)[2]){
     SVD <- svd(X)
     U <- SVD$u
     V <- SVD$v
@@ -29,7 +29,7 @@ RidgeEstimator <- function(y, X, r)
     V <- SVD$v
   }
   
-  if (dim(X)[1] < dim(X)[2]){
+  if (dim(X)[1] <= dim(X)[2]){
     D.pseudo.Inverse <- matrix(rep(0, dim(X)[1] * dim(X)[1]), 
                                nrow = dim(X)[1], 
                                ncol = dim(X)[1])
