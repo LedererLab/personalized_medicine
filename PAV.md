@@ -116,8 +116,6 @@ PavEdr <- function(y, X, Z, tuning.parameters = NULL, num.tuning = 300)
     z <- Z[, k]  # data vector
     z.norm <- EuclideanNorm(z)
     
-    as.vector(coef[1:min(num.obs, num.par)]))
-    
     start.time <- Sys.time()
     # compute the bounds (1+c[z,r])r/2
     bounds <- rep(0, num.tuning)
