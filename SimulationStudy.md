@@ -258,7 +258,7 @@ compTime.CV3.scaled <- mean(compTime.CV3) / compTime.pav.mean
 
 output.Data <- matrix(c(
   mean(errors.pav), mean(errors.CV10), mean(errors.CV5), mean(errors.CV3),
-  sd(errors.pav), sd(errors.CV10), sd(errors.CV5), sd(errors.CV3),
+  sd(errors.pav) / sqrt(num.runs * num.testing), sd(errors.CV10) / sqrt(num.runs * num.testing), sd(errors.CV5) / sqrt(num.runs * num.testing), sd(errors.CV3) / sqrt(num.runs * num.testing),
   compTime.pav.scaled, compTime.CV10.scaled, compTime.CV5.scaled, 
   compTime.CV3.scaled),
   nrow = 4, ncol = 3)
