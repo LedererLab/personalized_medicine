@@ -130,7 +130,7 @@ PavEdr <- function(y, X, Z, tuning.parameters = NULL, num.tuning = 300)
     ordering <- sort(bounds, 
                      decreasing   = FALSE, 
                      index.return = TRUE, 
-                     method       = "shell")$ix
+                     method       = "quick")$ix
     bounds.ordered <- bounds[ordering]  # Utility vector of ordered bounds
     estimators.ordered <- estimators[, ordering]
     

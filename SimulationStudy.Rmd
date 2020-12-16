@@ -5,19 +5,20 @@
 
 ##### Settings
 
-# Load the PAVedr function
-source("./PAV.R") # Load PAV.edr function
-source("./RidgeCv.R") # Load cross-validation function for Ridge
-source("./RidgeEstimator.R") # Load estimation function for Ridge
-
 # Fix a random seed for reproducibility
 # seed = 1
 
 # Simulation parameters 
-num.runs <- 10 # number of runs of the test (for averaging)
-num.obs <- 50 # number of observations
-num.par <- 100 # number of parameters
+num.runs <- 100 # number of runs of the test (for averaging)
+num.obs <- 200 # number of observations
+num.par <- 500 # number of parameters
 num.testing <- 100 # number of testing data vectors per run
+
+# Load the PAVedr function
+source("./PAV.R") # Load PAV.edr function
+source("./RidgeCv.R") # Load cross-validation function for Ridge
+source("./RidgeEstimator.R") # Load estimation function for Ridge
+source("./Fridge.R") # Load Fridge function
 
 # Generate a set of tuning parameters
 num.tuning = 300 # Number of tuning parameters
@@ -32,7 +33,16 @@ tuning.parameters <- 10 ^ power
 test.case <- "random"
 
 if (test.case == "real"){
-  num.runs = 1
+  
+  # Kidney data example 
+  load("./data/E-GEOD-33070_gene.RData")
+  load("./data/E-GEOD-33070_clinical.RData")
+  load("./data/index_for_parameters.RData")
+  
+  exp <- as.matrix(exp)
+  X <- as.matrix(t(exp[index,]))
+  num.obs <- dim(X)[1] # Number of observations
+  num.par <- dim(X)[2] # Number of regression parameters
 }
 
 # Set the signal-to-noise ratio
@@ -47,21 +57,20 @@ k = NULL
 errors.pav  <- matrix(NA, nrow = num.runs, ncol = num.testing)
 errors.CV10 <- matrix(NA, nrow = num.runs, ncol = num.testing)
 errors.CV5  <- matrix(NA, nrow = num.runs, ncol = num.testing)
-errors.CV3  <- matrix(NA, nrow = num.runs, ncol = num.testing)
+errors.oracle  <- matrix(NA, nrow = num.runs, ncol = num.testing)
+errors.fridge  <- matrix(NA, nrow = num.runs, ncol = num.testing)
+
 compTime.pav  <- rep(NA, num.runs)
 compTime.CV10 <- rep(NA, num.runs)
 compTime.CV5  <- rep(NA, num.runs)
-compTime.CV3  <- rep(NA, num.runs)
+compTime.fridge  <- rep(NA, num.runs)
 
 # Odds Ratio
 Odds.ratio <- rep(0, num.runs)
 
-
-for (run in 1:num.runs) {
+for (run in 1:num.runs){
   
-  if(test.case != "real"){
-    cat(sprintf("run %d out of %d runs\n", run, num.runs))
-  }
+  cat(sprintf("run %d out of %d runs\n", run, num.runs))
   
   ##### Generate the test setting
   
@@ -71,16 +80,19 @@ for (run in 1:num.runs) {
   
   cat("  -> generate test case... ")
   
-  if(test.case != "real"){
-    
+  if (test.case == "random"){
     # design matrix
     if (is.null(k) != 1){
       library(MASS)
       Ones <- rep(1, num.par) %*% t(rep(1, num.par))
       Sigma <- (1 - k) * diag(num.par) + k * Ones
-      X <- mvrnorm(n = num.obs, 
-                   mu = rep(rnorm(1, 0, 10), num.par), 
-                   Sigma = Sigma)
+      X <- matrix(nrow = num.obs, ncol = num.par)
+      for (i in 1:num.obs){
+        m <- rnorm(1,0,10)
+        X[i, ] <- mvrnorm(n = 1, 
+                          mu = rep(m, num.par), 
+                          Sigma = Sigma)
+      }
     } else {
       X <- matrix(nrow = num.obs, ncol = num.par)
       for (i in 1:num.obs)
@@ -88,91 +100,41 @@ for (run in 1:num.runs) {
         X[i, ] <- rnorm(num.par, mean = rnorm(1, 0, 10), sd = 1)
       }
     }
-    
-    # Compute the svd of X
-    SVD <- svd(X)
-    V <- SVD$v # Right singular vectors
-    P <- V %*% t(V) # Projector onto row sapce of X  
-    
-    # regression vector
-    beta <- rnorm(num.par, mean = 0, sd = 1) 
-    beta <- as.vector(P %*% beta)
-    
-    # noise (signal to noise ratio = 0.5)
-    u <- rnorm(num.obs, mean = 0, sd = sqrt(stn ^ -1 * var(X %*% beta)))
-    
-    # outcome
-    y <- as.vector(X %*% beta + u)
-    
-    # Visualization of data
-    plot(X %*% beta, y, xlab = "x", ylab = "y")
-    
-    # Normalize each column of the design matrix
-    for (i in 1:num.par)
-    {
-      nv <- as.vector(X[, i])
-      X[, i] <- nv/as.numeric(sqrt(t(nv) %*% nv))
-    }
-    
   }
   
-  ##### Generate test data
-  if (test.case == "random") {
-    
-    ### Random case : 
-    Z <- matrix(nrow = num.par, ncol = num.testing)
-    for (i in 1:num.par)
-    {
-      Z[i, ] <- runif(num.testing, -1, 1)
-    }
-    
-  } 
+  # Normalize each column of the design matrix
+  for (i in 1:num.par){
+    nv <- as.vector(X[, i])
+    X[, i] <- nv/as.numeric(sqrt(t(nv) %*% nv))
+  }
   
-  if (test.case == "real") {
-    
-    # Kidney data example 
-    load("./data/E-GEOD-33070_gene.RData")
-    load("./data/E-GEOD-33070_clinical.RData")
-    load("./data/index_for_parameters.RData")
-    
-    exp <- as.matrix(exp)
-    X <- t(exp[index,])
-    num.obs <- dim(X)[1] # Number of observations
-    num.par <- dim(X)[2] # Number of regression parameters
-    
-    # Compute the svd of X
-    SVD <- svd(X)
-    V <- SVD$v # Right singular vectors
-    P <- V %*% t(V) # Projector onto row sapce of X  
-    
-    # regression vector
-    beta <- rnorm(num.par, mean = 0, sd = 1) 
-    beta <- as.vector(P %*% beta)
-    
-    # noise (signal to noise ratio = 0.5)
-    u <- rnorm(num.obs, mean = 0, sd = sqrt(stn ^ -1 * var(X %*% beta)))
-    
-    # outcome
-    y <- as.vector(X %*% beta + u)
-    
-    # Visualization of data
-    plot(X %*% beta, y, xlab = "x", ylab = "y")
-    
-    # Normalize each column of the design matrix
-    for (i in 1:num.par)
-    {
-      nv <- as.vector(X[, i])
-      X[, i] <- nv/as.numeric(sqrt(t(nv) %*% nv))
-    }
-    
-    # Generate testing vectors
-    Z <- matrix(nrow = num.par, ncol = num.testing)
-    for (i in 1:num.par)
-    {
-      Z[i, ] <- runif(num.testing, -1, 1)
-    }
-    
-  } 
+  # Compute the svd of X
+  SVD <- svd(X)
+  V <- SVD$v # Right singular vectors
+  P <- V %*% t(V) # Projector onto row sapce of X  
+  
+  # regression vector
+  beta <- rnorm(num.par, mean = 0, sd = 10) 
+  beta <- as.vector(P %*% beta)
+  
+  # noise (signal to noise ratio = 0.5)
+  u <- rnorm(num.obs, mean = 0, sd = sqrt(stn ^ -1 * var(X %*% beta)))
+  
+  # outcome
+  y <- as.vector(X %*% beta + u)
+  
+  # Visualization of data
+  plot(X %*% beta, y, xlab = "x", ylab = "y")
+  
+  ##### Generate test data
+  
+  ### Random case : 
+  Z <- matrix(nrow = num.par, ncol = num.testing)
+  for (i in 1:num.testing){
+    #Z[i, ] <- runif(num.testing, -1, 1)
+    Z[, i] <- rnorm(num.par, 0, 10)
+    #Z[, i] <- nv/as.numeric(sqrt(t(nv) %*% nv))
+  }
   
   cat("done\n")
   
@@ -180,10 +142,77 @@ for (run in 1:num.runs) {
   
   # Perform the PAVedr pipeline
   cat("  -> compute PAVedr tuning parameters... ")
-  # start.time <- Sys.time()
   pav <- PavEdr(y, X, Z, tuning.parameters = tuning.parameters)
-  # end.time <- Sys.time()
   compTime.pav[run] <- pav$time  # time in ms
+  cat("done\n")
+  
+  # Perform the Oracle pipeline
+  cat("  -> compute Oracle tuning parameters... ")
+  
+  # L2 norm function
+  EuclideanNorm <- function(x){
+    as.numeric(sqrt(t(x) %*% x))
+  }
+  
+  # Compute the ridge estimator for each tuning parameter
+  estimators <- matrix(nrow = num.par, ncol = num.tuning)
+  
+  for(i in 1:num.tuning) {
+    estimators[, i] <- RidgeEstimator(y, X, tuning.parameters[i])
+  }
+  
+  lambda <- rep(0, num.testing)
+  for (t in 1:num.testing){
+    oracle <- rep(0, length(tuning.parameters))
+    bound <- rep(0, length(tuning.parameters))
+    bound.optimal <- rep(0, length(tuning.parameters))
+    for (o in 1:length(tuning.parameters)){
+      z <- as.vector(Z[, t])
+      z.norm <- EuclideanNorm(z)
+      c <- as.numeric(abs(z %*% estimators[, o]) / 
+                        (z.norm * EuclideanNorm(estimators[, o])))
+      oracle[o] <- 2 * abs(t(X %*% z) %*% (y - X %*% beta)) / (z.norm * c)
+      bound[o] <- c * tuning.parameters[o]
+      bound.optimal[o] <- c * oracle[o]
+    }
+    fit.oracle <- tuning.parameters - oracle
+    fit.bound <- bound[fit.oracle >= 0]
+    if (isTRUE(length(fit.bound)==0)){
+      bound <- bound.optimal
+      fit.bound <- bound.optimal
+      lambda.index <- min(which(bound == min(fit.bound)))
+      lambda[t] <- oracle[lambda.index]
+    } else {
+      lambda.index <- min(which(bound == min(fit.bound)))
+      lambda[t] <- tuning.parameters[lambda.index]
+    }
+  }
+  
+  oracle.estimator <- matrix(nrow = num.par, ncol = num.testing)
+  for (t in 1:num.testing){
+    oracle.estimator[, t] <- RidgeEstimator(y, X, lambda[t])
+  }
+  cat("done\n")
+  
+  # Fridge
+  cat("  -> compute Fridge tuning parameters... ")
+  start.time <- Sys.time()
+  n <- num.obs
+  svd <- SVD
+  fridge.lambda <- rep(0, num.testing)
+  for (t in 1:num.testing){
+    z <- as.vector(Z[, t])
+    Fridge.fit <- fridge(X,y,x0=z,plug.in = 'RLOOCV',plot.curve=FALSE)
+    fridge.lambda[t] <- Fridge.fit$fridge.tuning
+  }
+  
+  fridge.estimator <- matrix(nrow = num.par, ncol = num.testing)
+  for (t in 1:num.testing){
+    fridge.estimator[, t] <- RidgeEstimator(y, X, fridge.lambda[t])
+  }
+  end.time <- Sys.time()
+  compTime.fridge[run] <- as.numeric(difftime(end.time, start.time, 
+                                              units = "sec")) / num.testing # time in ms
   cat("done\n")
   
   # CV k=10
@@ -193,7 +222,7 @@ for (run in 1:num.runs) {
   CV10.estimator <- RidgeEstimator(y, X, CV10.tuning)
   end.time <- Sys.time()
   compTime.CV10[run] <- as.numeric(difftime(end.time, start.time, 
-  units = "sec"))  # time in ms
+                                            units = "sec"))  # time in ms
   cat("done\n")
   
   # CV k=5
@@ -203,18 +232,9 @@ for (run in 1:num.runs) {
   CV5.estimator <- RidgeEstimator(y, X, CV5.tuning)
   end.time <- Sys.time()
   compTime.CV5[run] <- as.numeric(difftime(end.time, start.time, 
-  units = "sec"))  # time in ms
+                                           units = "sec"))  # time in ms
   cat("done\n")
   
-  # CV k=3
-  cat("  -> compute CV (K=3) tuning parameters... ")
-  start.time <- Sys.time()
-  CV3.tuning <- RidgeCv(y, X, tuning.parameters = tuning.parameters, K = 3)
-  CV3.estimator <- RidgeEstimator(y, X, CV3.tuning)
-  end.time <- Sys.time()
-  compTime.CV3[run] <- as.numeric(difftime(end.time, start.time, 
-  units = "sec"))  # time in ms
-  cat("done\n")
   
   
   ##### Compute the personalized prediction errors 
@@ -223,9 +243,11 @@ for (run in 1:num.runs) {
     z <- as.vector(Z[, i])
     # Absolute error
     errors.pav[run, i] <- abs(t(z) %*% (pav$beta.hat[, i] - beta))
+    errors.oracle[run, i] <- abs(t(z) %*% (oracle.estimator[, i] - beta))
+    errors.fridge[run, i] <- abs(t(z) %*% (fridge.estimator[, i] - beta))
     errors.CV10[run, i] <- abs(t(z) %*% (CV10.estimator - beta)) 
     errors.CV5[run, i] <- abs(t(z) %*% (CV5.estimator - beta))
-    errors.CV3[run, i] <- abs(t(z) %*% (CV3.estimator - beta))
+    
   }
   cat("done\n")
   
@@ -234,14 +256,17 @@ for (run in 1:num.runs) {
   }
   
   cat(paste0("PAV \n :", 
-         mean(na.omit(errors.pav)),
-         "\n",
-         "CV10 \n :", 
-         mean(na.omit(errors.CV10)), 
-         "\n",
-         "Odds.ratio \n :",
-         mean(Odds.ratio[1:run]),
-         "\n"))
+             mean(na.omit(errors.pav)),
+             "\n",
+             "CV10 \n :", 
+             mean(na.omit(errors.CV10)), 
+             "\n",
+             "fridge \n :", 
+             mean(na.omit(errors.fridge)), 
+             "\n",
+             "Odds.ratio \n :",
+             mean(Odds.ratio[1:run]),
+             "\n"))
   
 }  # End loop over the number of runs
 
@@ -249,25 +274,27 @@ for (run in 1:num.runs) {
 
 compTime.pav.mean <- mean(compTime.pav)
 compTime.pav.scaled <- 1.00
+compTime.fridge.scaled <- mean(compTime.fridge) / compTime.pav.mean
 compTime.CV10.scaled <- mean(compTime.CV10) / compTime.pav.mean
 compTime.CV5.scaled <- mean(compTime.CV5) / compTime.pav.mean
-compTime.CV3.scaled <- mean(compTime.CV3) / compTime.pav.mean
+
 
 
 ##### Output results
 
 output.Data <- matrix(c(
-  mean(errors.pav), mean(errors.CV10), mean(errors.CV5), mean(errors.CV3),
-  sd(errors.pav), sd(errors.CV10), sd(errors.CV5), sd(errors.CV3),
-  compTime.pav.scaled, compTime.CV10.scaled, compTime.CV5.scaled, 
-  compTime.CV3.scaled),
-  nrow = 4, ncol = 3)
-rownames(output.Data) <- c("Pav.edr", "10-fold CV", "5-fold CV", "3-fold CV")
+  mean(errors.pav), mean(errors.oracle), mean(errors.fridge), mean(errors.CV10), mean(errors.CV5),
+  sd(errors.pav), sd(errors.oracle), sd(errors.fridge), sd(errors.CV10), sd(errors.CV5),
+  compTime.pav.scaled, "None",  compTime.fridge.scaled, compTime.CV10.scaled, compTime.CV5.scaled),
+  nrow = 5, ncol = 3)
+rownames(output.Data) <- c("Pav.edr", "Oracle", "Fridge", "10-fold CV", "5-fold CV")
 colnames(output.Data)<- c("mean", "sd", "Scaled-compTime")
 
 cat("Simulation Results : \n")
 
 output.Data
+
+
 ```
 
 
