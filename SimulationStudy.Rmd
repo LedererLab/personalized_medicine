@@ -10,8 +10,8 @@
 
 # Simulation parameters 
 num.runs <- 100 # number of runs of the test (for averaging)
-num.obs <- 200 # number of observations
-num.par <- 500 # number of parameters
+num.obs <- 50 # number of observations
+num.par <- 100 # number of parameters
 num.testing <- 100 # number of testing data vectors per run
 
 # Load the PAVedr function
@@ -59,6 +59,7 @@ errors.CV10 <- matrix(NA, nrow = num.runs, ncol = num.testing)
 errors.CV5  <- matrix(NA, nrow = num.runs, ncol = num.testing)
 errors.oracle  <- matrix(NA, nrow = num.runs, ncol = num.testing)
 errors.fridge  <- matrix(NA, nrow = num.runs, ncol = num.testing)
+errors.optimal  <- matrix(NA, nrow = num.runs, ncol = num.testing)
 
 compTime.pav  <- rep(NA, num.runs)
 compTime.CV10 <- rep(NA, num.runs)
@@ -146,8 +147,8 @@ for (run in 1:num.runs){
   compTime.pav[run] <- pav$time  # time in ms
   cat("done\n")
   
-  # Perform the Oracle pipeline
-  cat("  -> compute Oracle tuning parameters... ")
+  # Perform the Oracle and Optimal pipeline
+  cat("  -> compute Oracle and Optimal tuning parameters... ")
   
   # L2 norm function
   EuclideanNorm <- function(x){
@@ -159,6 +160,13 @@ for (run in 1:num.runs){
   
   for(i in 1:num.tuning) {
     estimators[, i] <- RidgeEstimator(y, X, tuning.parameters[i])
+  }
+  
+  # Compute Optimal tuning parameter
+  err <- rep(0, num.testing)
+  for (i in 1:num.testing){
+    z <- as.vector(Z[, i])
+    err[i] <- abs(t(z) %*% (estimators[, i] - beta))
   }
   
   lambda <- rep(0, num.testing)
@@ -244,6 +252,7 @@ for (run in 1:num.runs){
     # Absolute error
     errors.pav[run, i] <- abs(t(z) %*% (pav$beta.hat[, i] - beta))
     errors.oracle[run, i] <- abs(t(z) %*% (oracle.estimator[, i] - beta))
+    errors.optimal[run, i] <- min(err)
     errors.fridge[run, i] <- abs(t(z) %*% (fridge.estimator[, i] - beta))
     errors.CV10[run, i] <- abs(t(z) %*% (CV10.estimator - beta)) 
     errors.CV5[run, i] <- abs(t(z) %*% (CV5.estimator - beta))
@@ -283,10 +292,10 @@ compTime.CV5.scaled <- mean(compTime.CV5) / compTime.pav.mean
 ##### Output results
 
 output.Data <- matrix(c(
-  mean(errors.pav), mean(errors.oracle), mean(errors.fridge), mean(errors.CV10), mean(errors.CV5),
-  sd(errors.pav), sd(errors.oracle), sd(errors.fridge), sd(errors.CV10), sd(errors.CV5),
-  compTime.pav.scaled, "None",  compTime.fridge.scaled, compTime.CV10.scaled, compTime.CV5.scaled),
-  nrow = 5, ncol = 3)
+  mean(errors.optimal), mean(errors.oracle), mean(errors.pav), mean(errors.fridge), mean(errors.CV5), mean(errors.CV10), 
+  sd(errors.optimal), sd(errors.oracle), sd(errors.pav), sd(errors.fridge), sd(errors.CV5), sd(errors.CV10), 
+  "None",  "None",  compTime.pav.scaled, compTime.fridge.scaled,  compTime.CV5.scaled), compTime.CV10.scaled,
+  nrow = 6, ncol = 3)
 rownames(output.Data) <- c("Pav.edr", "Oracle", "Fridge", "10-fold CV", "5-fold CV")
 colnames(output.Data)<- c("mean", "sd", "Scaled-compTime")
 

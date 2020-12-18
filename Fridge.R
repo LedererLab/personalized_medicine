@@ -31,7 +31,7 @@ fridge <- function(X,y,x0,plug.in = c('OLS','RLOOCV'),plot.curve=TRUE){
   n <- dim(X)[1]
   
   svd <- svd(X)
-  opt.loocv <- optim(par = 1,tuning.loocv,y=y,svd=svd,n=n,lower=1e-10,upper = Inf, method = "L-BFGS-B",control = list(factr=1e7))$par
+  opt.loocv <- optim(par = 1,tuning.loocv,y=y,svd=svd,n=n,lower=1e-15,upper = Inf, method = "L-BFGS-B",control = list(factr=1e4))$par
   
   #Decide on a set of start values
   start <- 10^seq(1,7,1)
@@ -47,9 +47,9 @@ fridge <- function(X,y,x0,plug.in = c('OLS','RLOOCV'),plot.curve=TRUE){
   
   for(l in 1:length(start)){
     if(plug.in=='OLS'){
-      optimfridge <- optim(par = start[l],tuning.fridge.ols.sim,y=y,svd = svd,sigma2_hat=sigma2_hat,x0=x0,lower=0,upper = Inf, method = "L-BFGS-B",control = list(factr=1e7))
+      optimfridge <- optim(par = start[l],tuning.fridge.ols.sim,y=y,svd = svd,sigma2_hat=sigma2_hat,x0=x0,lower=0,upper = Inf, method = "L-BFGS-B",control = list(factr=1e2))
     } else {
-      optimfridge <- optim(par = start[l],tuning.fridge.ridge.sim,y=y,svd = svd,sigma2_hat=sigma2_hat,cv.tuning=opt.loocv,x0=x0,lower=0,upper = Inf, method = "L-BFGS-B",control = list(factr=1e7))
+      optimfridge <- optim(par = start[l],tuning.fridge.ridge.sim,y=y,svd = svd,sigma2_hat=sigma2_hat,cv.tuning=opt.loocv,x0=x0,lower=0,upper = Inf, method = "L-BFGS-B",control = list(factr=1e2))
     } 
     value[l] <- optimfridge$value   
     param[l] <- optimfridge$par  
