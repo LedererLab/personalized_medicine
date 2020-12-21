@@ -88,17 +88,17 @@ for (run in 1:num.runs){
       Ones <- rep(1, num.par) %*% t(rep(1, num.par))
       Sigma <- (1 - k) * diag(num.par) + k * Ones
       X <- matrix(nrow = num.obs, ncol = num.par)
+      m <- rnorm(num.obs,0,100)
       for (i in 1:num.obs){
-        m <- rnorm(1,0,10)
         X[i, ] <- mvrnorm(n = 1, 
-                          mu = rep(m, num.par), 
+                          mu = rep(m[i], num.par), 
                           Sigma = Sigma)
       }
     } else {
       X <- matrix(nrow = num.obs, ncol = num.par)
       for (i in 1:num.obs)
       {
-        X[i, ] <- rnorm(num.par, mean = rnorm(1, 0, 10), sd = 1)
+        X[i, ] <- rnorm(num.par, mean = rnorm(1, 0, 100), sd = 1)
       }
     }
   }
@@ -205,8 +205,7 @@ for (run in 1:num.runs){
   # Fridge
   cat("  -> compute Fridge tuning parameters... ")
   start.time <- Sys.time()
-  n <- num.obs
-  svd <- SVD
+ 
   fridge.lambda <- rep(0, num.testing)
   for (t in 1:num.testing){
     z <- as.vector(Z[, t])
@@ -294,16 +293,14 @@ compTime.CV5.scaled <- mean(compTime.CV5) / compTime.pav.mean
 output.Data <- matrix(c(
   mean(errors.optimal), mean(errors.oracle), mean(errors.pav), mean(errors.fridge), mean(errors.CV5), mean(errors.CV10), 
   sd(errors.optimal), sd(errors.oracle), sd(errors.pav), sd(errors.fridge), sd(errors.CV5), sd(errors.CV10), 
-  "None",  "None",  compTime.pav.scaled, compTime.fridge.scaled,  compTime.CV5.scaled), compTime.CV10.scaled,
+  "None",  "None",  compTime.pav.scaled, compTime.fridge.scaled,  compTime.CV5.scaled, compTime.CV10.scaled),
   nrow = 6, ncol = 3)
-rownames(output.Data) <- c("Pav.edr", "Oracle", "Fridge", "10-fold CV", "5-fold CV")
+rownames(output.Data) <- c("Optimal", "Oracle", "Pav.edr", "Fridge", "5-fold CV", "10-fold CV")
 colnames(output.Data)<- c("mean", "sd", "Scaled-compTime")
 
 cat("Simulation Results : \n")
 
 output.Data
-
-
 ```
 
 
