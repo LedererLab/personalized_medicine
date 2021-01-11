@@ -1,4 +1,3 @@
-```{r}
 ###########################
 ## Kidney data analysis ## 
 ###########################
@@ -48,10 +47,10 @@ errors.CV10 <- rep(NA, dim(X)[1])
 errors.CV5  <- rep(NA, dim(X)[1])
 errors.fridge  <- rep(NA, dim(X)[1])
 
-compTime.fridge <- rep(NA, dim(X)[1])
 compTime.pav  <- rep(NA, dim(X)[1])
 compTime.CV10 <- rep(NA, dim(X)[1])
 compTime.CV5  <- rep(NA, dim(X)[1])
+compTime.fridge <- rep(NA, dim(X)[1])
 
 cat(paste0("analysis case is : "), analysis.case, "\n")
 if (analysis.case == "in-sample"){
@@ -69,9 +68,11 @@ if (analysis.case == "in-sample"){
     
     ### PAVedr
     cat("  -> compute PAVedr tuning parameters... ")
+    start.time <- Sys.time()
     pav <- PavEdr(y, X.test, Z, tuning.parameters = tuning.parameters)
     beta.hat <- pav$beta.hat
-    compTime.pav[s] <- pav$time  
+    compTime.pav[s] <- as.numeric(difftime(Sys.time(), start.time, 
+                                           units = "sec"))
     cat("done\n")
     
     ### Fridge
@@ -83,9 +84,8 @@ if (analysis.case == "in-sample"){
     
     fridge.estimator <- RidgeEstimator(y, X.test, fridge.lambda)
     
-    end.time <- Sys.time()
-    compTime.fridge[s] <- as.numeric(difftime(end.time, start.time, 
-                                              units = "sec"))  # time in ms
+    compTime.fridge[s] <- as.numeric(difftime(Sys.time(), start.time, 
+                                              units = "sec"))
     cat("done\n")
     
     
@@ -95,8 +95,7 @@ if (analysis.case == "in-sample"){
     CV10.tuning <- RidgeCv(y, X.test, tuning.parameters = tuning.parameters, 
                            K = 10)
     CV10.estimator <- RidgeEstimator(y, X.test, CV10.tuning)
-    end.time <- Sys.time()
-    compTime.CV10[s] <- as.numeric(difftime(end.time, start.time, 
+    compTime.CV10[s] <- as.numeric(difftime(Sys.time(), start.time, 
                                             units = "sec"))  
     cat("done\n")
     
@@ -106,8 +105,8 @@ if (analysis.case == "in-sample"){
     CV5.tuning <- RidgeCv(y, X.test, tuning.parameters = tuning.parameters, 
                           K = 5)
     CV5.estimator <- RidgeEstimator(y, X.test, CV5.tuning)
-    end.time <- Sys.time()
-    compTime.CV5[s] <- as.numeric(difftime(end.time, start.time, units = "sec"))  
+    compTime.CV5[s] <- as.numeric(difftime(Sys.time(), start.time, 
+                                           units = "sec"))  
     cat("done\n")
     
     errors.fridge[s] <- abs(y[s]-t(test)%*%fridge.estimator)
@@ -115,15 +114,12 @@ if (analysis.case == "in-sample"){
     errors.CV10[s] <- abs(y[s]-t(test)%*%CV10.estimator)
     errors.CV5[s] <- abs(y[s]-t(test)%*%CV5.estimator)
     
-    cat(paste0("PAV \n :", 
-               mean(na.omit(errors.pav)),
-               "\n",
-               "CV10 \n :", 
-               mean(na.omit(errors.CV10)), 
-               "\n",
-               "fridge \n :", 
-               mean(na.omit(errors.fridge)), 
-               "\n"))
+    cat("  -> Mean errors:\n",
+        "     - PAV:        ", mean(na.omit(errors.pav)), "\n",
+        "     - CV5:        ", mean(na.omit(errors.CV5)), "\n",
+        "     - CV10:       ", mean(na.omit(errors.CV10)), "\n",
+        "     - Fridge:     ", mean(na.omit(errors.fridge)), "\n"
+    )
   }
   # end of in-sample prediction
 } else {
@@ -225,11 +221,16 @@ output.Data <- matrix(c(
 rownames(output.Data) <- c("Pav.edr", "Fridge", "10-fold CV", "5-fold CV")
 colnames(output.Data)<- c("mean", "sd", "Scaled-compTime")
 
+results <- data.frame(
+  "mean"=c(mean(errors.optimal), mean(errors.oracle), mean(errors.pav), mean(errors.fridge), mean(errors.CV5), mean(errors.CV10)),
+  "sd"=c(sd(errors.optimal), sd(errors.oracle), sd(errors.pav), sd(errors.fridge), sd(errors.CV5), sd(errors.CV10)), 
+  "comp.time"=c(NA, NA, mean(compTime.pav), mean(compTime.fridge), mean(compTime.CV10), mean(compTime.CV5)),
+  row.names=c("Optimal", "Oracle", "Pav.edr", "Fridge", "5-fold CV", "10-fold CV")
+)
+
 cat("Simulation Results : \n")
 
 output.Data
-
-```
 
 
 
