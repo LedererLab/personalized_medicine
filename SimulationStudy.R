@@ -1,4 +1,3 @@
-```{r}
 ######################
 ## Simulation Study ##
 ######################
@@ -9,7 +8,7 @@
 # seed = 1
 
 ## Simulation parameters 
-num.runs <- 2  # number of runs of the test (for averaging)
+num.runs <- 3  # number of runs of the test (for averaging)
 num.obs <- 50  # number of observations
 num.par <- 100  # number of parameters
 num.testing <- 100  # number of testing data vectors per run
@@ -73,14 +72,19 @@ compTime.fridge  <- rep(NA, num.runs)
 # Odds Ratio
 Odds.ratio <- rep(0, num.runs)
 
-cat(paste0("test case is : "), test.case, "\n")
+# Print simulation setting to screen
+cat("Simulation settings: \n",
+    "  - test case: ", test.case, "\n",
+    "  - n: ", num.obs, ", p: ", num.par, "\n",
+    "  - number of testing vectors: ", num.testing, "\n",
+    "  - signal-to-noise ratio: ", stn, "\n", sep="")
 if(test.case=="random") {
-  cat(paste0("Magnitude of mutual correlation is : "), ifelse(is.null(k), 0, k), "\n")
+  cat(paste0("  - magnitude of mutual correlation is : "), ifelse(is.null(k), 0, k), "\n")
 }
   
 # Iterate over number of runs for averaging
 for (run in 1:num.runs){
-  cat(sprintf("run %d out of %d runs\n", run, num.runs))
+  cat(sprintf("Run %d out of %d runs\n", run, num.runs))
   
   ##### Test case set up
   
@@ -155,7 +159,7 @@ for (run in 1:num.runs){
   
   cat("  -> compute PAVedr tuning parameters... ")
   pav <- PavEdr(y, X, Z, tuning.parameters = tuning.parameters)
-  compTime.pav[run] <- pav$time  # time in ms
+  compTime.pav[run] <- pav$time.const  # time in ms
   cat("done\n")
   
   
@@ -239,8 +243,7 @@ for (run in 1:num.runs){
   #   fridge.estimator[, t] <- RidgeEstimator(y, X, fridge.lambda[t])
   # }
   end.time <- Sys.time()
-  compTime.fridge[run] <- as.numeric(difftime(end.time, start.time, 
-                                              units = "sec")) / num.testing # time in ms
+  compTime.fridge[run] <- Fridge.fit$time.plug.in
   cat("done\n")
   
   
@@ -321,9 +324,9 @@ rownames(output.Data) <- c("Optimal", "Oracle", "Pav.edr", "Fridge", "5-fold CV"
 colnames(output.Data)<- c("mean", "sd", "Scaled-compTime")
 
 cat("Simulation Results : \n")
+print(output.Data)
 
 output.Data
-```
 
 
 
