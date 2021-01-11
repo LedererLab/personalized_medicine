@@ -34,6 +34,8 @@ fridge <- function(X,y,x0,plug.in = c('OLS','RLOOCV'),plot.curve=TRUE){
   
   ### Plug-in estimator (indepenedent of focus covariate)
   
+  start.time <- Sys.time()  # start time measurement
+  
   svd <- svd(X)
   opt.loocv <- optim(par = 1,tuning.loocv,y=y,svd=svd,n=n,lower=1e-15,upper = Inf, method = "L-BFGS-B",control = list(factr=1e4))$par
   
@@ -53,8 +55,14 @@ fridge <- function(X,y,x0,plug.in = c('OLS','RLOOCV'),plot.curve=TRUE){
   result$loocv.beta <- svd$v%*%diag(svd$d/(svd$d^2  + opt.loocv))%*%t(svd$u)%*% y
   result$loocv.pred <- t(x0)%*%result$loocv.beta
   
+  # run time measurement
+  time.plug.in <- as.numeric(difftime(Sys.time(), start.time, units = "sec"))
+  
   
   ### Tuning parameter calibration for focus covariate
+  
+  # run time measurement of the focus covariant dependent computation
+  start.time <- Sys.time()
   
   fridge.tuning <- rep(NA, num.focus.cov)
   fridge.beta <- matrix(NA, nrow=p, ncol=num.focus.cov)
@@ -94,10 +102,16 @@ fridge <- function(X,y,x0,plug.in = c('OLS','RLOOCV'),plot.curve=TRUE){
     fridge.pred[t] <- t(z)%*%fridge.beta[, t]
   }
   
+  # run time measurement
+  time.focus.cov <- as.numeric(difftime(Sys.time(), start.time, units = "sec"))
+  time.focus.cov <- time.focus.cov / num.focus.cov  # mean run time
+  
   # save and return results
   result$fridge.tuning <- fridge.tuning
   result$fridge.pred <- fridge.pred
   result$fridge.beta <- fridge.beta
+  result$time.plug.in <- time.plug.in
+  result$time.focus.cov <- time.focus.cov
   return(result)
 }
 
