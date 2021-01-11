@@ -105,9 +105,10 @@ PavEdr <- function(y, X, Z, tuning.parameters = NULL, num.tuning = 300)
   outcome.hat <- rep(NA, num.data)
   
   # Timing for the part independent of testing vectors
-  end.time <- Sys.time()
-  pav.time.1 <- as.numeric(difftime(end.time, start.time, units = "sec"))  
+  time.const <- as.numeric(difftime(Sys.time(), start.time, units = "sec"))  
   
+  
+  ##### Step 4 : Compute the optimal tuning parameter for each testing vector
   
   start.time <- Sys.time() # Timing for testing dependent part
   
@@ -134,9 +135,6 @@ PavEdr <- function(y, X, Z, tuning.parameters = NULL, num.tuning = 300)
     bounds.ordered <- bounds[ordering]  # Utility vector of ordered bounds
     estimators.ordered <- estimators[, ordering]
     
-    
-    
-    ##### Step 4 : Use the PAVedr method to compute the optimal tuning parameter
     
     i.optimal <- NaN
     i.optimal.found <- FALSE
@@ -172,13 +170,13 @@ PavEdr <- function(y, X, Z, tuning.parameters = NULL, num.tuning = 300)
     outcome.hat[k] <- t(z) %*% estimator.hat[, k]
     
   }
-  ## Timing of the testing dependent part
-  end.time <- Sys.time()
-  # average tuning parameter calibration time per data vector
-  pav.time.2 <- as.numeric(difftime(end.time, start.time, units = "sec")) / num.data
+  # mean tuning parameter calibration run time per data vector
+  time.testing <- as.numeric(difftime(Sys.time(), start.time, units = "sec")) / num.data
   
-  pav.time <- pav.time.1 + pav.time.2
   
-  return(list(beta.hat = estimator.hat, y.hat = outcome.hat, 
-              tuning.chosen = tuning.hat, time = pav.time))
+  return(list(beta.hat = estimator.hat, 
+              y.hat = outcome.hat, 
+              tuning.chosen = tuning.hat, 
+              time.const = time.const,
+              time.testing = time.testing))
 }
