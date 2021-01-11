@@ -8,7 +8,7 @@
 # seed = 1
 
 ## Simulation parameters 
-num.runs <- 3  # number of runs of the test (for averaging)
+num.runs <- 100  # number of runs of the test (for averaging)
 num.obs <- 50  # number of observations
 num.par <- 100  # number of parameters
 num.testing <- 100  # number of testing data vectors per run
@@ -64,10 +64,12 @@ errors.oracle  <- matrix(NA, nrow = num.runs, ncol = num.testing)
 errors.fridge  <- matrix(NA, nrow = num.runs, ncol = num.testing)
 errors.optimal  <- matrix(NA, nrow = num.runs, ncol = num.testing)
 
-compTime.pav  <- rep(NA, num.runs)
+compTime.pav.const    <- rep(NA, num.runs)
+compTime.pav.testing  <- rep(NA, num.runs)
 compTime.CV10 <- rep(NA, num.runs)
 compTime.CV5  <- rep(NA, num.runs)
-compTime.fridge  <- rep(NA, num.runs)
+compTime.fridge.plug.in  <- rep(NA, num.runs)
+compTime.fridge.testing  <- rep(NA, num.runs)
 
 # Odds Ratio
 Odds.ratio <- rep(0, num.runs)
@@ -159,7 +161,8 @@ for (run in 1:num.runs){
   
   cat("  -> compute PAVedr tuning parameters... ")
   pav <- PavEdr(y, X, Z, tuning.parameters = tuning.parameters)
-  compTime.pav[run] <- pav$time.const  # time in ms
+  compTime.pav.const[run] <- pav$time.const 
+  compTime.pav.testing[run] <- pav$time.testing
   cat("done\n")
   
   
@@ -225,25 +228,12 @@ for (run in 1:num.runs){
   ### Fridge
   
   cat("  -> compute Fridge tuning parameters... ")
-  start.time <- Sys.time()
   
   Fridge.fit <- fridge(X, y, x0=Z, plug.in='RLOOCV', plot.curve=FALSE)
   fridge.lambda <- Fridge.fit$fridge.tuning
   fridge.estimator <- Fridge.fit$fridge.beta
- 
-  # fridge.lambda <- rep(0, num.testing)
-  # for (t in 1:num.testing){
-  #   z <- as.vector(Z[, t])
-  #   Fridge.fit <- fridge(X,y,x0=z,plug.in = 'RLOOCV',plot.curve=FALSE)
-  #   fridge.lambda[t] <- Fridge.fit$fridge.tuning
-  # }
-  # 
-  # fridge.estimator <- matrix(nrow = num.par, ncol = num.testing)
-  # for (t in 1:num.testing){
-  #   fridge.estimator[, t] <- RidgeEstimator(y, X, fridge.lambda[t])
-  # }
-  end.time <- Sys.time()
-  compTime.fridge[run] <- Fridge.fit$time.plug.in
+  compTime.fridge.plug.in[run] <- Fridge.fit$time.plug.in
+  compTime.fridge.testing[run] <- Fridge.fit$time.focus.cov
   cat("done\n")
   
   
@@ -305,15 +295,17 @@ for (run in 1:num.runs){
 
 ##### Data processing
 
-compTime.pav.mean <- mean(compTime.pav)
+compTime.pav.mean <- mean(compTime.pav.const + compTime.pav.testing)
 compTime.pav.scaled <- 1.00
-compTime.fridge.scaled <- mean(compTime.fridge) / compTime.pav.mean
+compTime.fridge.scaled <- mean(compTime.fridge.plug.in + compTime.fridge.testing) / compTime.pav.mean
 compTime.CV10.scaled <- mean(compTime.CV10) / compTime.pav.mean
 compTime.CV5.scaled <- mean(compTime.CV5) / compTime.pav.mean
 
 
 
 ##### Output results
+
+
 
 output.Data <- matrix(c(
   mean(errors.optimal), mean(errors.oracle), mean(errors.pav), mean(errors.fridge), mean(errors.CV5), mean(errors.CV10), 
@@ -323,10 +315,20 @@ output.Data <- matrix(c(
 rownames(output.Data) <- c("Optimal", "Oracle", "Pav.edr", "Fridge", "5-fold CV", "10-fold CV")
 colnames(output.Data)<- c("mean", "sd", "Scaled-compTime")
 
+
+results <- data.frame(
+  "mean"=c(mean(errors.optimal), mean(errors.oracle), mean(errors.pav), mean(errors.fridge), mean(errors.CV5), mean(errors.CV10)),
+  "sd"=c(sd(errors.optimal), sd(errors.oracle), sd(errors.pav), sd(errors.fridge), sd(errors.CV5), sd(errors.CV10)), 
+  "Const.time"=c(NA, NA, mean(compTime.pav.const), mean(compTime.fridge.plug.in), mean(compTime.CV10), mean(compTime.CV5)),
+  "Patient.time"=c(NA, NA, mean(compTime.pav.testing), mean(compTime.fridge.testing), NA, NA),
+  row.names=c("Optimal", "Oracle", "Pav.edr", "Fridge", "5-fold CV", "10-fold CV")
+)
+
 cat("Simulation Results : \n")
 print(output.Data)
+print(results)
 
-output.Data
+
 
 
 
