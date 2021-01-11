@@ -53,30 +53,32 @@ compTime.pav  <- rep(NA, dim(X)[1])
 compTime.CV10 <- rep(NA, dim(X)[1])
 compTime.CV5  <- rep(NA, dim(X)[1])
 
+cat(paste0("analysis case is : "), analysis.case, "\n")
 if (analysis.case == "in-sample"){
+  ##### in-sample prediction
+  
   for (s in 1:dim(X)[1]){
-    cat(paste0("analysis case is : "), analysis.case, "\n")
     cat(sprintf("run %d out of %d testing vector\n", s, dim(X)[1]))
     
     # Testing vector
     Z <- as.matrix(X.test[s, ])
     test <- as.vector(X.test[s,])
     
-    ##### Tuning parameter calibration with PAVedr and CV
     
-    # Perform the PAVedr pipeline
+    ##### Tuning parameter calibration
+    
+    ### PAVedr
     cat("  -> compute PAVedr tuning parameters... ")
     pav <- PavEdr(y, X.test, Z, tuning.parameters = tuning.parameters)
     beta.hat <- pav$beta.hat
     compTime.pav[s] <- pav$time  
     cat("done\n")
     
-    # Fridge
+    ### Fridge
     cat("  -> compute Fridge tuning parameters... ")
     start.time <- Sys.time()
   
-    z <- test
-    Fridge.fit <- fridge(X,y,x0=z,plug.in = 'RLOOCV',plot.curve=FALSE)
+    Fridge.fit <- fridge(X,y,x0=Z,plug.in = 'RLOOCV',plot.curve=FALSE)
     fridge.lambda <- Fridge.fit$fridge.tuning
     
     fridge.estimator <- RidgeEstimator(y, X.test, fridge.lambda)
@@ -87,7 +89,7 @@ if (analysis.case == "in-sample"){
     cat("done\n")
     
     
-    # CV k=10
+    ### CV (K=10 fold)
     cat("  -> compute CV (K=10) tuning parameters... ")
     start.time <- Sys.time()
     CV10.tuning <- RidgeCv(y, X.test, tuning.parameters = tuning.parameters, 
@@ -98,7 +100,7 @@ if (analysis.case == "in-sample"){
                                             units = "sec"))  
     cat("done\n")
     
-    # CV k=5
+    ### CV (K=5 fold)
     cat("  -> compute CV (K=5) tuning parameters... ")
     start.time <- Sys.time()
     CV5.tuning <- RidgeCv(y, X.test, tuning.parameters = tuning.parameters, 
@@ -123,12 +125,13 @@ if (analysis.case == "in-sample"){
                mean(na.omit(errors.fridge)), 
                "\n"))
   }
-  
+  # end of in-sample prediction
 } else {
+  
+  ##### Out-of-sample prediction
   
   for (s in 1:dim(X)[1])
   {
-    cat(paste0("analysis case is : "), analysis.case, "\n")
     cat(sprintf("run %d out of %d testing vector\n", s, dim(X)[1]))
     
     X.run <- X.test[-s, ]
@@ -193,15 +196,13 @@ if (analysis.case == "in-sample"){
     errors.CV10[s] <- abs(y[s]-t(test)%*%CV10.estimator)
     errors.CV5[s] <- abs(y[s]-t(test)%*%CV5.estimator)
     
-    cat(paste0("PAV \n :", 
-               mean(na.omit(errors.pav)),
-               "\n",
-               "CV10 \n :", 
-               mean(na.omit(errors.CV10)), 
-               "\n",
-               "fridge \n :", 
-               mean(na.omit(errors.fridge)), 
-               "\n"))
+    cat("  -> Mean errors:\n",
+        "     - PAV:        ", mean(na.omit(errors.pav)), "\n",
+        "     - CV5:        ", mean(na.omit(errors.CV5)), "\n",
+        "     - CV10:       ", mean(na.omit(errors.CV10)), "\n",
+        "     - Fridge:     ", mean(na.omit(errors.fridge)), "\n"
+        )
+    
   }
 }
 
@@ -221,7 +222,7 @@ output.Data <- matrix(c(
   sd(errors.pav), sd(errors.fridge), sd(errors.CV10), sd(errors.CV5),
   compTime.pav.scaled, compTime.fridge.scaled, compTime.CV10.scaled, compTime.CV5.scaled),
   nrow = 4, ncol = 3)
-rownames(output.Data) <- c("Pav.edr", "fridge", "10-fold CV", "5-fold CV")
+rownames(output.Data) <- c("Pav.edr", "Fridge", "10-fold CV", "5-fold CV")
 colnames(output.Data)<- c("mean", "sd", "Scaled-compTime")
 
 cat("Simulation Results : \n")
