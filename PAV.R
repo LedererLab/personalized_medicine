@@ -21,7 +21,7 @@ PavEdr <- function(y, X, Z, tuning.parameters = NULL, num.tuning = 300)
   #                The default value is set to be 300.
   # Returns : 
   #   beta.hat : A matrix of dimension p * t, where each column is the estimator
-  #              of regession vector corresponding to the column of Z.
+  #              of the regression vector corresponding to the column of Z.
   #   y.hat : A vector of dimension t, where each element is the estimated value 
   #           of Euclidean distance Ridge corresponding to the column of Z.
   #   tuning.chosen : A vector of dimension t, where each element is the optimal 

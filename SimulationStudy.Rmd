@@ -3,27 +3,21 @@
 ## Simulation Study ##
 ######################
 
-##### Settings
+### Settings
 
 # Fix a random seed for reproducibility
 # seed = 1
 
-# Simulation parameters 
-num.runs <- 100 # number of runs of the test (for averaging)
-num.obs <- 50 # number of observations
-num.par <- 100 # number of parameters
-num.testing <- 100 # number of testing data vectors per run
-
-# Load the PAVedr function
-source("./PAV.R") # Load PAV.edr function
-source("./RidgeCv.R") # Load cross-validation function for Ridge
-source("./RidgeEstimator.R") # Load estimation function for Ridge
-source("./Fridge.R") # Load Fridge function
-
-# Generate a set of tuning parameters
+## Simulation parameters 
+num.runs <- 2  # number of runs of the test (for averaging)
+num.obs <- 50  # number of observations
+num.par <- 100  # number of parameters
+num.testing <- 100  # number of testing data vectors per run
+stn = 0.5  # signal-to-noise ratio
 num.tuning = 300 # Number of tuning parameters
-power <- seq(from = -5, to = 5, length.out = num.tuning)
-tuning.parameters <- 10 ^ power
+# Set the 
+# If none, then set k = NULL
+k = NULL  # magnitude of mutual correlations
 
 # Choose a test case for the testing data:
 # Options: random, real
@@ -32,8 +26,24 @@ tuning.parameters <- 10 ^ power
 # testing vectors
 test.case <- "random"
 
+# should the data be plotted?
+plot.data <- FALSE
+
+
+## Load functions and packages
+source("./PAV.R") # Load PAV.edr function
+source("./RidgeCv.R") # Load cross-validation function for Ridge
+source("./RidgeEstimator.R") # Load estimation function for Ridge
+source("./Fridge.R") # Load Fridge function
+library(MASS)
+
+# Generate a set of tuning parameters
+power <- seq(from = -5, to = 5, length.out = num.tuning)
+tuning.parameters <- 10 ^ power
+
+# Simulation study based on real data
+# [the data for the "random" test case is generated within the run loop.]
 if (test.case == "real"){
-  
   # Kidney data example 
   load("./data/E-GEOD-33070_gene.RData")
   load("./data/E-GEOD-33070_clinical.RData")
@@ -45,12 +55,6 @@ if (test.case == "real"){
   num.par <- dim(X)[2] # Number of regression parameters
 }
 
-# Set the signal-to-noise ratio
-stn = 0.5
-
-# Set the magnitude of mutual correlations
-# If none, then set k = NULL
-k = NULL
 
 ##### Loop over the number of runs
 # Initialize absolute error and computation time arrays
@@ -69,22 +73,23 @@ compTime.fridge  <- rep(NA, num.runs)
 # Odds Ratio
 Odds.ratio <- rep(0, num.runs)
 
-for (run in 1:num.runs){
+cat(paste0("test case is : "), test.case, "\n")
+if(test.case=="random") {
+  cat(paste0("Magnitude of mutual correlation is : "), ifelse(is.null(k), 0, k), "\n")
+}
   
+# Iterate over number of runs for averaging
+for (run in 1:num.runs){
   cat(sprintf("run %d out of %d runs\n", run, num.runs))
   
-  ##### Generate the test setting
-  
-  cat(paste0("test case is : "), test.case, "\n")
-  
-  cat(paste0("Magnitude of mutual correlation is : "), k, "\n")
-  
-  cat("  -> generate test case... ")
+  ##### Test case set up
   
   if (test.case == "random"){
-    # design matrix
-    if (is.null(k) != 1){
-      library(MASS)
+    cat("  -> generate test case... ")
+    
+    # generate design matrix
+    if (!is.null(k)){
+      # non-zero mutual correlation
       Ones <- rep(1, num.par) %*% t(rep(1, num.par))
       Sigma <- (1 - k) * diag(num.par) + k * Ones
       X <- matrix(nrow = num.obs, ncol = num.par)
@@ -95,6 +100,7 @@ for (run in 1:num.runs){
                           Sigma = Sigma)
       }
     } else {
+      # zero mutual correlation
       X <- matrix(nrow = num.obs, ncol = num.par)
       for (i in 1:num.obs)
       {
@@ -111,25 +117,26 @@ for (run in 1:num.runs){
   
   # Compute the svd of X
   SVD <- svd(X)
-  V <- SVD$v # Right singular vectors
-  P <- V %*% t(V) # Projector onto row sapce of X  
+  V <- SVD$v  # Right singular vectors
+  P <- V %*% t(V)  # Project onto row space of X  
   
   # regression vector
   beta <- rnorm(num.par, mean = 0, sd = 10) 
   beta <- as.vector(P %*% beta)
   
-  # noise (signal to noise ratio = 0.5)
+  # noise (signal to noise ratio = stn)
   u <- rnorm(num.obs, mean = 0, sd = sqrt(stn ^ -1 * var(X %*% beta)))
   
   # outcome
   y <- as.vector(X %*% beta + u)
   
   # Visualization of data
-  plot(X %*% beta, y, xlab = "x", ylab = "y")
+  if(plot.data) plot(X %*% beta, y, xlab = "x", ylab = "y")
   
-  ##### Generate test data
   
-  ### Random case : 
+  ## Generate test data
+  
+  # Random case : 
   Z <- matrix(nrow = num.par, ncol = num.testing)
   for (i in 1:num.testing){
     #Z[i, ] <- runif(num.testing, -1, 1)
@@ -139,18 +146,25 @@ for (run in 1:num.runs){
   
   cat("done\n")
   
-  ##### Tuning parameter calibration with PAVedr and CV
   
-  # Perform the PAVedr pipeline
+  
+  ##### Tuning parameter calibration 
+  
+  
+  ### PAVedr
+  
   cat("  -> compute PAVedr tuning parameters... ")
   pav <- PavEdr(y, X, Z, tuning.parameters = tuning.parameters)
   compTime.pav[run] <- pav$time  # time in ms
   cat("done\n")
   
+  
+  ### Oracle and optimal tuning parameters
+  
   # Perform the Oracle and Optimal pipeline
   cat("  -> compute Oracle and Optimal tuning parameters... ")
   
-  # L2 norm function
+  # L2-norm function
   EuclideanNorm <- function(x){
     as.numeric(sqrt(t(x) %*% x))
   }
@@ -202,27 +216,35 @@ for (run in 1:num.runs){
   }
   cat("done\n")
   
-  # Fridge
+  
+  
+  ### Fridge
+  
   cat("  -> compute Fridge tuning parameters... ")
   start.time <- Sys.time()
- 
-  fridge.lambda <- rep(0, num.testing)
-  for (t in 1:num.testing){
-    z <- as.vector(Z[, t])
-    Fridge.fit <- fridge(X,y,x0=z,plug.in = 'RLOOCV',plot.curve=FALSE)
-    fridge.lambda[t] <- Fridge.fit$fridge.tuning
-  }
   
-  fridge.estimator <- matrix(nrow = num.par, ncol = num.testing)
-  for (t in 1:num.testing){
-    fridge.estimator[, t] <- RidgeEstimator(y, X, fridge.lambda[t])
-  }
+  Fridge.fit <- fridge(X, y, x0=Z, plug.in='RLOOCV', plot.curve=FALSE)
+  fridge.lambda <- Fridge.fit$fridge.tuning
+  fridge.estimator <- Fridge.fit$fridge.beta
+ 
+  # fridge.lambda <- rep(0, num.testing)
+  # for (t in 1:num.testing){
+  #   z <- as.vector(Z[, t])
+  #   Fridge.fit <- fridge(X,y,x0=z,plug.in = 'RLOOCV',plot.curve=FALSE)
+  #   fridge.lambda[t] <- Fridge.fit$fridge.tuning
+  # }
+  # 
+  # fridge.estimator <- matrix(nrow = num.par, ncol = num.testing)
+  # for (t in 1:num.testing){
+  #   fridge.estimator[, t] <- RidgeEstimator(y, X, fridge.lambda[t])
+  # }
   end.time <- Sys.time()
   compTime.fridge[run] <- as.numeric(difftime(end.time, start.time, 
                                               units = "sec")) / num.testing # time in ms
   cat("done\n")
   
-  # CV k=10
+  
+  ### CV (K=10 fold)
   cat("  -> compute CV (K=10) tuning parameters... ")
   start.time <- Sys.time()
   CV10.tuning <- RidgeCv(y, X, tuning.parameters = tuning.parameters, K = 10)
@@ -232,7 +254,7 @@ for (run in 1:num.runs){
                                             units = "sec"))  # time in ms
   cat("done\n")
   
-  # CV k=5
+  ### CV (K=5 fold)
   cat("  -> compute CV (K=5) tuning parameters... ")
   start.time <- Sys.time()
   CV5.tuning <- RidgeCv(y, X, tuning.parameters = tuning.parameters, K = 5)
@@ -244,7 +266,9 @@ for (run in 1:num.runs){
   
   
   
-  ##### Compute the personalized prediction errors 
+  ##### Personalized prediction errors 
+  
+  
   cat("  -> compute errors... ")
   for (i in 1:num.testing) {
     z <- as.vector(Z[, i])
@@ -263,20 +287,18 @@ for (run in 1:num.runs){
     Odds.ratio[run] = 1
   }
   
-  cat(paste0("PAV \n :", 
-             mean(na.omit(errors.pav)),
-             "\n",
-             "CV10 \n :", 
-             mean(na.omit(errors.CV10)), 
-             "\n",
-             "fridge \n :", 
-             mean(na.omit(errors.fridge)), 
-             "\n",
-             "Odds.ratio \n :",
-             mean(Odds.ratio[1:run]),
-             "\n"))
+  cat("  -> Mean errors:\n",
+      "     - PAV:        ", mean(na.omit(errors.pav)), "\n",
+      "     - CV5:        ", mean(na.omit(errors.CV5)), "\n",
+      "     - CV10:       ", mean(na.omit(errors.CV10)), "\n",
+      "     - Fridge:     ", mean(na.omit(errors.fridge)), "\n",
+      "     - Odds.ratio: ",mean(Odds.ratio[1:run]), "\n"
+      )
   
 }  # End loop over the number of runs
+
+
+
 
 ##### Data processing
 
