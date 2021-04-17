@@ -35,6 +35,7 @@ source("./RidgeCv.R") # Load cross-validation function for Ridge
 source("./RidgeEstimator.R") # Load estimation function for Ridge
 source("./Fridge.R") # Load Fridge function
 library(MASS)
+library(glmnet)
 
 # Generate a set of tuning parameters
 power <- seq(from = -5, to = 5, length.out = num.tuning)
@@ -240,8 +241,14 @@ for (run in 1:num.runs){
   ### CV (K=10 fold)
   cat("  -> compute CV (K=10) tuning parameters... ")
   start.time <- Sys.time()
-  CV10.tuning <- RidgeCv(y, X, tuning.parameters = tuning.parameters, K = 10)
-  CV10.estimator <- RidgeEstimator(y, X, CV10.tuning)
+  
+  #CV10.tuning <- RidgeCv(y, X, tuning.parameters = tuning.parameters, K = 10)
+  #CV10.estimator <- RidgeEstimator(y, X, CV10.tuning)
+  
+  cv <- cv.glmnet(X, y, nfolds=10, alpha=0, family="gaussian", intercept=FALSE)
+  cv.estimation <- glmnet(X, y, alpha=0, family=Test.case, lambda=cv$lambda.min)
+  CV10.estimator <- as.vector(coef(cv.estimation))[-1]
+
   end.time <- Sys.time()
   compTime.CV10[run] <- as.numeric(difftime(end.time, start.time, 
                                             units = "sec"))  # time in ms
@@ -250,8 +257,14 @@ for (run in 1:num.runs){
   ### CV (K=5 fold)
   cat("  -> compute CV (K=5) tuning parameters... ")
   start.time <- Sys.time()
-  CV5.tuning <- RidgeCv(y, X, tuning.parameters = tuning.parameters, K = 5)
-  CV5.estimator <- RidgeEstimator(y, X, CV5.tuning)
+
+  #CV5.tuning <- RidgeCv(y, X, tuning.parameters = tuning.parameters, K = 5)
+  #CV5.estimator <- RidgeEstimator(y, X, CV5.tuning)
+
+  cv <- cv.glmnet(X, y, nfolds=5, alpha=0, family="gaussian", intercept=FALSE)
+  cv.estimation <- glmnet(X, y, alpha=0, family=Test.case, lambda=cv$lambda.min)
+  CV5.estimator <- as.vector(coef(cv.estimation))[-1]
+
   end.time <- Sys.time()
   compTime.CV5[run] <- as.numeric(difftime(end.time, start.time, 
                                            units = "sec"))  # time in ms
